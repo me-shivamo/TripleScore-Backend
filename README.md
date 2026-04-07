@@ -139,3 +139,23 @@ See [API.md](API.md) for the full endpoint reference.
 | `POST` | `/diagnostic/questions` | Fetch questions for a chapter |
 | `POST` | `/diagnostic/submit` | Grade test, record mastery, award XP |
 | `POST` | `/diagnostic/skip` | Skip diagnostic, seed prior estimates |
+| `GET` | `/practice/chapters` | List chapters for a subject |
+| `POST` | `/practice/questions` | Fetch practice questions (vector-aware) |
+
+---
+
+## Future Scope
+
+### pgvector Index for Large Question Banks
+
+The current setup stores 3072-dimensional embeddings in PostgreSQL using the `pgvector` extension. Similarity queries run as exact sequential scans — instant at the current scale (~144 questions).
+
+When you scale up to 15,000+ questions later, upgrade to pgvector ≥ 0.7 (`sudo apt-get install postgresql-16-pgvector` from a newer repo) and the index can be added using `halfvec` casting:
+
+```sql
+CREATE INDEX questions_embedding_hnsw
+ON questions
+USING hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops);
+```
+
+This enables approximate nearest-neighbour search with sub-millisecond latency at any scale.
